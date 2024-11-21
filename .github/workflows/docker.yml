@@ -26,4 +26,4 @@ jobs:
         context: .
         platforms: linux/amd64
         push: true
-        tags: pixelt/newBaldy:latest  
+        tags: pixelt/newbaldy:latest  
