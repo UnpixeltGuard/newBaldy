@@ -22,8 +22,9 @@ RUN apk update && apk add --no-cache \
     libmagic \
     libsndfile \
     alsa-lib-dev \  
-    portaudio-dev \
-    && apk clean
+    portaudio-dev
+    
+RUN apk add --no-cache python3 py3-pip
 
 
 RUN pip install --upgrade pip setuptools wheel
