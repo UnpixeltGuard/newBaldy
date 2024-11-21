@@ -11,8 +11,18 @@ RUN chmod +x ./docker-entrypoint.sh
 
 VOLUME [ "/app" ]
 
-RUN apt-get update && apt-get install -y ffmpeg libmagic1
 
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libffi-dev \
+    libssl-dev \
+    python3-dev \
+    build-essential \
+    ffmpeg \
+    libmagic1 \
+    && apt-get clean
+
+RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 ENTRYPOINT [ "./docker-entrypoint.sh" ]
