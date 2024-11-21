@@ -5,3 +5,4 @@ ffmpeg
 aiohttp
 PyNaCl
 yt-dlp
+pyaudio
