@@ -6,7 +6,7 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/UnpixeltGuard/newBaldy?style=for-the-badge)
 
 Docker image for my own discord music bot.
-Mashed together in Python.
+Mashed together in Python. Uses Invidious API to bypass YouTube API restrictions. (please support their projects)
 
 Mount your `config.txt` on the path `/app/config.txt`.
 
