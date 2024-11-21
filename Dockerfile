@@ -20,9 +20,17 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     ffmpeg \
     libmagic1 \
+    libsndfile1 \
+    ibasound-dev \
+    libportaudio2 \
+    libportaudiocpp0 \
+    portaudio19-dev \
+    && rm -rf /var/lib/apt/lists/*
     && apt-get clean
 
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 ENTRYPOINT [ "./docker-entrypoint.sh" ]
+
+RUN apt-get install libasound-dev libportaudio2 libportaudiocpp0 portaudio19-dev -y
