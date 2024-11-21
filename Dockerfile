@@ -2,7 +2,8 @@ FROM python:3.14.0a2-slim
 
 WORKDIR /app
 
-ADD https://github.com/UnpixeltGuard/newBaldy/blob/04bb4a50c8ccc53a224a2ecc91b391f4df7b7c34/newBaldy.py ./newBaldy.py
+ADD newBaldy.py ./newBaldy.py
+ADD requirements.txt ./requirements.txt
 
 COPY docker-entrypoint.sh ./
 
