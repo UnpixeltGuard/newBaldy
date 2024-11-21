@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y \
     libportaudio2 \
     libportaudiocpp0 \
     portaudio19-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
 RUN pip install --upgrade pip setuptools wheel
