@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     libmagic1 \
     libsndfile1 \
-    ibasound2-dev \
+    libasound2-dev \
     libportaudio2 \
     libportaudiocpp0 \
     portaudio19-dev \
