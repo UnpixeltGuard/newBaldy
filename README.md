@@ -25,3 +25,14 @@ $ docker run --name jmusicbot -d -v /path/to/config.txt:/app/config.txt:rw \
 -v /path/to/downloadfolder:/app/downloads:rw --restart=unless-stopped \
 pixelt/newBaldy:latest
 ```
+Command List
+```
+!play       (song name)
+!stop       (stop bot from playing)
+!queue      (displays current queue sans the active song)
+!skip       (skips to the next song in queue)
+!shuffle    (adds 10 random songs to the queue and shuffles it)
+
+as owner
+!shutdown   (shuts down bot on backend)
+```
