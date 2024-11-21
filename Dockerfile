@@ -14,6 +14,8 @@ VOLUME [ "/app" ]
 
 RUN apk update && apk add --no-cache \
     gcc \
+    opus \
+    opus-dev \
     libffi-dev \
     libressl-dev \  
     python3-dev \
