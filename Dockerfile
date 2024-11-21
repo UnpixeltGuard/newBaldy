@@ -12,21 +12,19 @@ RUN chmod +x ./docker-entrypoint.sh
 VOLUME [ "/app" ]
 
 
-RUN apt-get update && apt-get install -y \
+RUN apk update && apk add --no-cache \
     gcc \
     libffi-dev \
-    libssl-dev \
+    libressl-dev \  
     python3-dev \
-    build-essential \
+    build-base \    
     ffmpeg \
-    libmagic1 \
-    libsndfile1 \
-    libasound2-dev \
-    libportaudio2 \
-    libportaudiocpp0 \
-    portaudio19-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    libmagic \
+    libsndfile \
+    alsa-lib-dev \  
+    portaudio-dev \
+    && apk clean
+
 
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
