@@ -1,0 +1,7 @@
+discord.py
+youtube-dl
+requests
+ffmpeg
+aiohttp
+PyNaCl
+yt-dlp
