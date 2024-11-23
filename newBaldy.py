@@ -62,7 +62,7 @@ def search_song(query):
     search_url = f"{INVIDIOUS_URL}/api/v1/search?q={query}"
     try:
         response = requests.get(search_url, timeout=10)
-        response.raise_for_status()  # Raise an error for HTTP issues
+        response.raise_for_status()
         data = response.json()
 
         # Ensure it's a list and contains video entries
@@ -70,23 +70,20 @@ def search_song(query):
             return data
         else:
             print(f"Unexpected API response: {data}")
-            return []  # Return an empty list if no valid data
+            return []
     except requests.RequestException as e:
         print(f"Error connecting to Invidious API: {e}")
-        return []  # Handle connection issues gracefully
+        return []
     except ValueError as e:
         print(f"Error parsing JSON from Invidious API: {e}")
-        return []  # Handle invalid JSON gracefully
+        return []
 
 # Add song to queue and play it
 async def add_to_queue_and_play(ctx, song_name: str):
-    # Search song using the Invidious API
     song_info = search_song(song_name)
-    # Check if search returned valid videos
     if not song_info:
         await ctx.send("No results found! Please try a different query.")
         return
-    # Take first video from the search
     video = song_info[0]  
     if 'title' not in video or 'videoId' not in video:
         await ctx.send("Invalid song data received from the search. Please try again.")
@@ -100,11 +97,9 @@ async def add_to_queue_and_play(ctx, song_name: str):
     
     if not os.path.exists(file_path):
         await ctx.send(f"Downloading {song_title}...")
-        # Download song
         download_song(video_url)
         await ctx.send(f"Downloaded {song_title}.")
 
-    # Add song to queue
     song_queue.append({'title': song_title, 'url': video_url, 'id': video['videoId']})
     await ctx.send(f"Added {song_title} to the queue.")
 
