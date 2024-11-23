@@ -6,8 +6,7 @@ import yt_dlp
 import requests
 import random
 import asyncio
-from functools import partial
-import random
+
 # Get directory of Python script
 script_dir = os.path.dirname(os.path.realpath(__file__))
 # Full path to the config file relative to the script directory
