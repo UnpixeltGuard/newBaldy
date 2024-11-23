@@ -5,7 +5,7 @@
 [![Build](https://img.shields.io/github/workflow/status/UnpixeltGuard/newBaldy/Build%20latest%20docker%20image%20for%20JMusicBot?style=for-the-badge)](https://github.com/UnpixeltGuard/newBaldy/actions/workflows/main.yml)
 ![GitHub last commit](https://img.shields.io/github/last-commit/UnpixeltGuard/newBaldy?style=for-the-badge)
 
-Docker image for my own discord music bot.
+Docker image for my own discord music bot for mostly personal use.
 Mashed together in Python. Uses Invidious API to bypass YouTube API restrictions. (please support their projects)
 
 Mount your `config.txt` on the path `/app/config.txt`.
