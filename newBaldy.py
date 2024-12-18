@@ -1,4 +1,5 @@
 import os
+import json
 import discord
 from discord.ext import commands, tasks
 from discord.ext.commands import is_owner
@@ -44,6 +45,35 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 song_queue = []
 voice_client = None
 
+def update_song_library(song_info):
+    """Update the song library index with information about a downloaded song."""
+    library_path = os.path.join(script_dir, 'song_library.json')
+    
+    # Load existing library or create new one
+    if os.path.exists(library_path):
+        with open(library_path, 'r', encoding='utf-8') as f:
+            library = json.load(f)
+    else:
+        library = {}
+    
+    # Extract relevant information
+    song_id = song_info['id']
+    song_data = {
+        'title': song_info.get('title', 'Unknown Title'),
+        'duration': song_info.get('duration', 0),
+        'uploader': song_info.get('uploader', 'Unknown Uploader'),
+        'filename': os.path.join(DOWNLOAD_FOLDER, f"{song_id}.webm"),
+        'url': f"https://www.youtube.com/watch?v={song_id}",
+        'download_date': song_info.get('download_date', '')
+    }
+    
+    # Update library
+    library[song_id] = song_data
+    
+    # Save updated library
+    with open(library_path, 'w', encoding='utf-8') as f:
+        json.dump(library, f, indent=4, ensure_ascii=False)
+
 # Download song with yt-dlp
 def download_song(url):
     ydl_opts = {
@@ -55,6 +85,8 @@ def download_song(url):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=True)
         filename = ydl.prepare_filename(info_dict)
+        # Update song library with downloaded song info
+        update_song_library(info_dict)
         return filename
 
 # Search song with Invidious API
@@ -149,6 +181,7 @@ async def show_queue(ctx):
         # Display current queue
         queue_list = "\n".join([f"{idx + 1}. {song['title']}" for idx, song in enumerate(song_queue)])
         await ctx.send(f"Current Queue:\n{queue_list}")
+
 # Skip song
 @bot.command(name="skip")
 async def skip(ctx):
@@ -158,6 +191,7 @@ async def skip(ctx):
         await ctx.send("Skipped the current song!")
     else:
         await ctx.send("No song is currently playing to skip.")
+
 # Stop music and disconnect bot
 @bot.command(name="stop")
 async def stop(ctx):
@@ -168,16 +202,68 @@ async def stop(ctx):
     song_queue.clear()
     await ctx.send("Stopped the music and cleared the queue!")
 
+# Library command
+@bot.command(name="library")
+async def library(ctx, *, query: str = None):
+    """
+    Show library contents. 
+    Without a query, shows first 20 songs.
+    With a query, searches for songs matching the title.
+    """
+    library_path = os.path.join(script_dir, 'song_library.json')
+    
+    # Check if library exists
+    if not os.path.exists(library_path):
+        await ctx.send("The song library is empty!")
+        return
+    
+    # Load library
+    with open(library_path, 'r', encoding='utf-8') as f:
+        library = json.load(f)
+    
+    # If library is empty
+    if not library:
+        await ctx.send("The song library is empty!")
+        return
+    
+    # If no query, show first 20 songs
+    if query is None:
+        songs_list = list(library.values())[:20]
+        response = "📚 First 20 songs in the library:\n" + "\n".join([
+            f"• {song['title']} (by {song['uploader']})" for song in songs_list
+        ])
+        await ctx.send(response)
+        return
+    
+    # Search for songs matching the query
+    matching_songs = [
+        song for song in library.values() 
+        if query.lower() in song['title'].lower()
+    ]
+    
+    # If no matching songs
+    if not matching_songs:
+        await ctx.send(f"No songs found matching '{query}'.")
+        return
+    
+    # Show matching songs
+    response = f"🔍 Songs matching '{query}':\n" + "\n".join([
+        f"• {song['title']} (by {song['uploader']})" for song in matching_songs
+    ])
+    await ctx.send(response)
+
 # Owner-only commands
 @bot.command(name="shutdown")
 @is_owner()
 async def shutdown(ctx):
     await ctx.send("Shutting down the bot...")
     await bot.close()
+
 # Queue song and play it
 @bot.command(name="play")
 async def play(ctx, *, song_name: str):
     await add_to_queue_and_play(ctx, song_name)
+
 # Pick 10 random songs, queue, shuffle and play them
 @bot.command(name="shuffle")
 async def shuffle(ctx):
