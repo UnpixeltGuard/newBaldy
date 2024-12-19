@@ -286,9 +286,68 @@ async def shuffle(ctx):
     if not voice_client or not voice_client.is_playing():
         await play_song(ctx)
 
+# Scan downloads directory and update library
+def scan_and_update_library():
+    """
+    Scan the downloads directory and update song_library.json 
+    with any songs not already in the index.
+    """
+    library_path = os.path.join(script_dir, 'song_library.json')
+    
+    # Load existing library or create new one
+    if os.path.exists(library_path):
+        with open(library_path, 'r', encoding='utf-8') as f:
+            library = json.load(f)
+    else:
+        library = {}
+    
+    # Scan downloads directory
+    downloaded_files = [f for f in os.listdir(download_folder_path) if f.endswith('.webm')]
+    
+    for filename in downloaded_files:
+        # Extract song ID from filename
+        song_id = filename.split('.')[0]
+        
+        # Skip if song is already in library
+        if song_id in library:
+            continue
+        
+        # Construct YouTube URL
+        video_url = f"https://www.youtube.com/watch?v={song_id}"
+        
+        try:
+            # Try to get song info
+            song_info = search_song(video_url)
+            
+            if song_info and isinstance(song_info, list) and len(song_info) > 0:
+                video = song_info[0]
+                
+                # Prepare song data
+                song_data = {
+                    'title': video.get('title', 'Unknown Title'),
+                    'duration': video.get('lengthSeconds', 0),
+                    'uploader': video.get('author', 'Unknown Uploader'),
+                    'filename': os.path.join(DOWNLOAD_FOLDER, filename),
+                    'url': video_url,
+                    'download_date': ''  # We don't know the exact download date
+                }
+                
+                # Add to library
+                library[song_id] = song_data
+        except Exception as e:
+            print(f"Error processing song {song_id}: {e}")
+    
+    # Save updated library
+    with open(library_path, 'w', encoding='utf-8') as f:
+        json.dump(library, f, indent=4, ensure_ascii=False)
+    
+    print(f"Library scan complete. Added {len(library) - len(library)} new songs.")
+
 # Start bot
 @bot.event
 async def on_ready():
     print(f"Bot is ready. Logged in as {bot.user.name}")
+    # Scan downloads directory and update library on startup
+    scan_and_update_library()
 
 bot.run(BOT_TOKEN)
