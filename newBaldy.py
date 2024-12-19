@@ -12,6 +12,9 @@ import asyncio
 script_dir = os.path.dirname(os.path.realpath(__file__))
 # Full path to the config file relative to the script directory
 config_file_path = os.path.join(script_dir, 'config.txt')
+INDEX_FOLDER = os.path.join(script_dir, 'index')
+os.makedirs(INDEX_FOLDER, exist_ok=True)
+library_path = os.path.join(INDEX_FOLDER, 'song_library.json')
 # Load config.txt file
 config = {}
 try:
@@ -47,7 +50,6 @@ voice_client = None
 
 def update_song_library(song_info):
     """Update the song library index with information about a downloaded song."""
-    library_path = os.path.join(script_dir, 'song_library.json')
     
     # Load existing library or create new one
     if os.path.exists(library_path):
@@ -210,7 +212,6 @@ async def library(ctx, *, query: str = None):
     Without a query, shows first 20 songs.
     With a query, searches for songs matching the title.
     """
-    library_path = os.path.join(script_dir, 'song_library.json')
     
     # Check if library exists
     if not os.path.exists(library_path):
@@ -292,7 +293,7 @@ def scan_and_update_library():
     Scan the downloads directory and update song_library.json 
     with any songs not already in the index.
     """
-    library_path = os.path.join(script_dir, 'song_library.json')
+
     
     # Load existing library or create new one
     if os.path.exists(library_path):
@@ -303,6 +304,9 @@ def scan_and_update_library():
     
     # Scan downloads directory
     downloaded_files = [f for f in os.listdir(download_folder_path) if f.endswith('.webm')]
+    
+    # Track new songs added
+    new_songs_count = 0
     
     for filename in downloaded_files:
         # Extract song ID from filename
@@ -316,24 +320,30 @@ def scan_and_update_library():
         video_url = f"https://www.youtube.com/watch?v={song_id}"
         
         try:
-            # Try to get song info
-            song_info = search_song(video_url)
+            # Try to get song info using yt-dlp for more reliable metadata
+            ydl_opts = {
+                'quiet': True,
+                'no_warnings': True,
+                'no_color': True,
+                'extract_flat': True
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                video_info = ydl.extract_info(video_url, download=False)
             
-            if song_info and isinstance(song_info, list) and len(song_info) > 0:
-                video = song_info[0]
-                
-                # Prepare song data
-                song_data = {
-                    'title': video.get('title', 'Unknown Title'),
-                    'duration': video.get('lengthSeconds', 0),
-                    'uploader': video.get('author', 'Unknown Uploader'),
-                    'filename': os.path.join(DOWNLOAD_FOLDER, filename),
-                    'url': video_url,
-                    'download_date': ''  # We don't know the exact download date
-                }
-                
-                # Add to library
-                library[song_id] = song_data
+            # Prepare song data
+            song_data = {
+                'title': video_info.get('title', 'Unknown Title'),
+                'duration': video_info.get('duration', 0),
+                'uploader': video_info.get('uploader', 'Unknown Uploader'),
+                'filename': os.path.join(DOWNLOAD_FOLDER, filename),
+                'url': video_url,
+                'download_date': ''  # We don't know the exact download date
+            }
+            
+            # Add to library
+            library[song_id] = song_data
+            new_songs_count += 1
+        
         except Exception as e:
             print(f"Error processing song {song_id}: {e}")
     
@@ -341,7 +351,7 @@ def scan_and_update_library():
     with open(library_path, 'w', encoding='utf-8') as f:
         json.dump(library, f, indent=4, ensure_ascii=False)
     
-    print(f"Library scan complete. Added {len(library) - len(library)} new songs.")
+    print(f"Library scan complete. Added {new_songs_count} new songs.")
 
 # Start bot
 @bot.event
