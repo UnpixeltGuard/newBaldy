@@ -12,7 +12,8 @@ Mount your `config.txt` on the path `/app/config.txt`.
 
 ```
 $ docker run --name jmusicbot -d -v /path/to/config.txt:/app/config.txt:ro \
--v /path/to/downloadfolder:/app/downloads:rw --restart=unless-stopped \
+-v /path/to/downloadfolder:/app/downloads:rw \
+-v /path/to/index:/app/index:rw --restart=unless-stopped \
 pixelt/newBaldy:latest
 ```
 
@@ -22,7 +23,8 @@ this will download the current template from github.
 Without own config.txt
 ```
 $ docker run --name jmusicbot -d -v /path/to/config.txt:/app/config.txt:rw \
--v /path/to/downloadfolder:/app/downloads:rw --restart=unless-stopped \
+-v /path/to/downloadfolder:/app/downloads:rw \
+-v /path/to/index:/app/index:rw --restart=unless-stopped \
 pixelt/newBaldy:latest
 ```
 Command List
@@ -32,6 +34,7 @@ Command List
 !queue      (displays current queue sans the active song)
 !skip       (skips to the next song in queue)
 !shuffle    (adds 10 random songs to the queue and shuffles it)
+!library    (shows all currently downloaded songs) (allows to search for downloaded songs by title)
 
 as owner
 !shutdown   (shuts down bot on backend)
