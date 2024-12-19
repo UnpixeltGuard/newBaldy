@@ -28,4 +28,4 @@ jobs:
         push: true
         tags: |
           pixelt/newbaldy:latest
-          pixelt/newbaldy:0.3
+          pixelt/newbaldy:0.4
