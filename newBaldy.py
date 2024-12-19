@@ -8,6 +8,8 @@ import requests
 import random
 import asyncio
 
+# Global variable to track bot readiness
+bot_ready = False
 # Get directory of Python script
 script_dir = os.path.dirname(os.path.realpath(__file__))
 # Full path to the config file relative to the script directory
@@ -76,8 +78,83 @@ def update_song_library(song_info):
     with open(library_path, 'w', encoding='utf-8') as f:
         json.dump(library, f, indent=4, ensure_ascii=False)
 
+
+# Scan the downloads directory and update song_library.json with any songs not already in the index.
+def scan_and_update_library():
+    global bot_ready
+    try:
+        # Load existing library or create new one
+        if os.path.exists(library_path):
+            with open(library_path, 'r', encoding='utf-8') as f:
+                library = json.load(f)
+        else:
+            library = {}
+        
+        # Scan downloads directory
+        downloaded_files = [f for f in os.listdir(download_folder_path) if f.endswith('.webm')]
+        
+        # Track new songs added
+        new_songs_count = 0
+        
+        for filename in downloaded_files:
+            # Extract song ID from filename
+            song_id = filename.split('.')[0]
+            
+            # Skip if song is already in library
+            if song_id in library:
+                continue
+            
+            # Construct YouTube URL
+            video_url = f"https://www.youtube.com/watch?v={song_id}"
+            
+            try:
+                # Try to get song info using yt-dlp for more reliable metadata
+                ydl_opts = {
+                    'quiet': True,
+                    'no_warnings': True,
+                    'no_color': True,
+                    'extract_flat': True
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    video_info = ydl.extract_info(video_url, download=False)
+                
+                # Prepare song data
+                song_data = {
+                    'title': video_info.get('title', 'Unknown Title'),
+                    'duration': video_info.get('duration', 0),
+                    'uploader': video_info.get('uploader', 'Unknown Uploader'),
+                    'filename': os.path.join(DOWNLOAD_FOLDER, filename),
+                    'url': video_url,
+                    'download_date': ''  # We don't know the exact download date
+                }
+                
+                # Add to library
+                library[song_id] = song_data
+                new_songs_count += 1
+            
+            except Exception as e:
+                print(f"Error processing song {song_id}: {e}")
+        
+        # Save updated library
+        with open(library_path, 'w', encoding='utf-8') as f:
+            json.dump(library, f, indent=4, ensure_ascii=False)
+        
+        bot_ready = True
+        print(f"Library scan complete. Added {new_songs_count} new songs. Bot is now ready to accept commands.")
+    except Exception as e:
+        print(f"Error during library scan: {e}")
+        bot_ready = True  # Ensure bot becomes ready even if scan fails
+
+def check_bot_ready():
+    async def predicate(ctx):
+        if not bot_ready:
+            await ctx.send("⏳ Bot is still initializing. Please wait a moment.")
+            return False
+        return True
+    return commands.check(predicate)
+
 # Download song with yt-dlp
-def download_song(url):
+async def download_song(url, ctx):
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': os.path.join(download_folder_path, '%(id)s.%(ext)s'),
@@ -85,9 +162,18 @@ def download_song(url):
         'quiet': True,
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        # First, extract info without downloading
+        info_dict = ydl.extract_info(url, download=False)
+        
+        # Check song duration
+        duration = info_dict.get('duration', 0)
+        if duration > MAX_SONG_TIME:
+            await ctx.send(f"❌ Song duration ({duration} seconds) exceeds max allowed duration of {MAX_SONG_TIME} seconds!")
+            return None
+
+        # If duration is acceptable, proceed with download
         info_dict = ydl.extract_info(url, download=True)
         filename = ydl.prepare_filename(info_dict)
-        # Update song library with downloaded song info
         update_song_library(info_dict)
         return filename
 
@@ -131,7 +217,9 @@ async def add_to_queue_and_play(ctx, song_name: str):
     
     if not os.path.exists(file_path):
         await ctx.send(f"Downloading {song_title}...")
-        download_song(video_url)
+        downloaded_file = await download_song(video_url, ctx)
+        if downloaded_file is None:
+            return  # Song was too long, so we stop here
         await ctx.send(f"Downloaded {song_title}.")
 
     song_queue.append({'title': song_title, 'url': video_url, 'id': video['videoId']})
@@ -176,6 +264,7 @@ async def play_song(ctx):
 
 # Show song queue
 @bot.command(name="queue")
+@check_bot_ready()
 async def show_queue(ctx):
     if not song_queue:
         await ctx.send("The queue is empty!")
@@ -186,6 +275,7 @@ async def show_queue(ctx):
 
 # Skip song
 @bot.command(name="skip")
+@check_bot_ready()
 async def skip(ctx):
     global voice_client
     if voice_client and voice_client.is_playing():
@@ -196,6 +286,7 @@ async def skip(ctx):
 
 # Stop music and disconnect bot
 @bot.command(name="stop")
+@check_bot_ready()
 async def stop(ctx):
     global voice_client
     if voice_client:
@@ -206,6 +297,7 @@ async def stop(ctx):
 
 # Library command
 @bot.command(name="library")
+@check_bot_ready()
 async def library(ctx, *, query: str = None):
     """
     Show library contents. 
@@ -255,6 +347,7 @@ async def library(ctx, *, query: str = None):
 
 # Owner-only commands
 @bot.command(name="shutdown")
+@check_bot_ready()
 @is_owner()
 async def shutdown(ctx):
     await ctx.send("Shutting down the bot...")
@@ -262,11 +355,13 @@ async def shutdown(ctx):
 
 # Queue song and play it
 @bot.command(name="play")
+@check_bot_ready()
 async def play(ctx, *, song_name: str):
     await add_to_queue_and_play(ctx, song_name)
 
 # Pick 10 random songs, queue, shuffle and play them
 @bot.command(name="shuffle")
+@check_bot_ready()
 async def shuffle(ctx):
     all_files = [f for f in os.listdir(download_folder_path) if f.endswith('.webm')]
     random_files = random.sample(all_files, min(10, len(all_files)))
@@ -287,77 +382,19 @@ async def shuffle(ctx):
     if not voice_client or not voice_client.is_playing():
         await play_song(ctx)
 
-# Scan downloads directory and update library
-def scan_and_update_library():
-    """
-    Scan the downloads directory and update song_library.json 
-    with any songs not already in the index.
-    """
-
-    
-    # Load existing library or create new one
-    if os.path.exists(library_path):
-        with open(library_path, 'r', encoding='utf-8') as f:
-            library = json.load(f)
-    else:
-        library = {}
-    
-    # Scan downloads directory
-    downloaded_files = [f for f in os.listdir(download_folder_path) if f.endswith('.webm')]
-    
-    # Track new songs added
-    new_songs_count = 0
-    
-    for filename in downloaded_files:
-        # Extract song ID from filename
-        song_id = filename.split('.')[0]
-        
-        # Skip if song is already in library
-        if song_id in library:
-            continue
-        
-        # Construct YouTube URL
-        video_url = f"https://www.youtube.com/watch?v={song_id}"
-        
-        try:
-            # Try to get song info using yt-dlp for more reliable metadata
-            ydl_opts = {
-                'quiet': True,
-                'no_warnings': True,
-                'no_color': True,
-                'extract_flat': True
-            }
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                video_info = ydl.extract_info(video_url, download=False)
-            
-            # Prepare song data
-            song_data = {
-                'title': video_info.get('title', 'Unknown Title'),
-                'duration': video_info.get('duration', 0),
-                'uploader': video_info.get('uploader', 'Unknown Uploader'),
-                'filename': os.path.join(DOWNLOAD_FOLDER, filename),
-                'url': video_url,
-                'download_date': ''  # We don't know the exact download date
-            }
-            
-            # Add to library
-            library[song_id] = song_data
-            new_songs_count += 1
-        
-        except Exception as e:
-            print(f"Error processing song {song_id}: {e}")
-    
-    # Save updated library
-    with open(library_path, 'w', encoding='utf-8') as f:
-        json.dump(library, f, indent=4, ensure_ascii=False)
-    
-    print(f"Library scan complete. Added {new_songs_count} new songs.")
-
 # Start bot
 @bot.event
 async def on_ready():
-    print(f"Bot is ready. Logged in as {bot.user.name}")
-    # Scan downloads directory and update library on startup
-    scan_and_update_library()
+    global bot_ready
+    print(f"Bot is logged in. Logged in as {bot.user.name}. Scanning library...")
+    
+    # Run library scan in a separate thread to prevent blocking
+    def run_scan():
+        scan_and_update_library()
+    
+    # Use asyncio to run the blocking scan in a separate thread
+    await bot.loop.run_in_executor(None, run_scan)
 
 bot.run(BOT_TOKEN)
+
+
