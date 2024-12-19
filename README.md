@@ -11,7 +11,7 @@ Mashed together in Python. Uses Invidious API to bypass YouTube API restrictions
 Mount your `config.txt` on the path `/app/config.txt`.
 
 ```
-$ docker run --name jmusicbot -d -v /path/to/config.txt:/app/config.txt:ro \
+$ docker run --name baldbot -d -v /path/to/config.txt:/app/config.txt:ro \
 -v /path/to/downloadfolder:/app/downloads:rw \
 -v /path/to/index:/app/index:rw --restart=unless-stopped \
 pixelt/newBaldy:latest
@@ -22,7 +22,7 @@ this will download the current template from github.
 
 Without own config.txt
 ```
-$ docker run --name jmusicbot -d -v /path/to/config.txt:/app/config.txt:rw \
+$ docker run --name baldbot -d -v /path/to/config.txt:/app/config.txt:rw \
 -v /path/to/downloadfolder:/app/downloads:rw \
 -v /path/to/index:/app/index:rw --restart=unless-stopped \
 pixelt/newBaldy:latest
