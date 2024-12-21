@@ -219,27 +219,44 @@ async def add_to_queue_and_play(ctx, song_name: str):
     if not song_info:
         # If Invidious search fails, try direct YouTube search and download
         try:
+            # More verbose logging
+            print(f"[YouTube Search] Attempting to search for: {song_name}")
+            
             ydl_opts = {
-                'quiet': True,
-                'no_warnings': True,
-                'extract_flat': True,
+                'quiet': True,  # Change to False to see more output
+                'no_warnings': False,  # Change to False to see warnings
+                'extract_flat': True,  # Change to False to get full video info
                 'default_search': 'ytsearch',  # Explicitly set default search
+                'verbose': True  # Add verbose logging
             }
+            
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 # Prepend 'ytsearch:' to ensure YouTube search
-                search_query = f"ytsearch:{song_name}"
-                info = ydl.extract_info(search_query, download=False)
+                search_query = song_name
+                print(f"[YouTube Search] Search query: {search_query}")
+                
+                try:
+                    info = ydl.extract_info(search_query, download=False)
+                    print(f"[YouTube Search] Raw info: {info}")
+                except Exception as search_err:
+                    print(f"[YouTube Search] Search extraction error: {search_err}")
+                    await ctx.send(f"Error searching YouTube: {search_err}")
+                    return
                 
                 # Handle both playlist and single video results
                 if 'entries' in info and info['entries']:
                     video = info['entries'][0]
+                    print(f"[YouTube Search] First video: {video}")
                 else:
+                    print("[YouTube Search] No entries found")
                     await ctx.send("No YouTube results found for the song.")
                     return
 
             song_title = video.get('title', song_name)
             video_url = video.get('webpage_url', '')
             video_id = video.get('id', '')
+
+            print(f"[YouTube Search] Song details - Title: {song_title}, URL: {video_url}, ID: {video_id}")
 
             if not video_url:
                 await ctx.send("No results found! Please try a different query.")
@@ -254,6 +271,7 @@ async def add_to_queue_and_play(ctx, song_name: str):
                 return  # Song was too long or download failed
 
         except Exception as e:
+            print(f"[YouTube Search] Unexpected error: {e}")
             await ctx.send(f"Error searching for song: {e}")
             return
     else:
