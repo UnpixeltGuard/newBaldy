@@ -223,16 +223,19 @@ async def add_to_queue_and_play(ctx, song_name: str):
                 'quiet': True,
                 'no_warnings': True,
                 'extract_flat': True,
-                'default_search': 'ytsearch1:',
+                'default_search': 'ytsearch',  # Explicitly set default search
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(song_name, download=False)
+                # Prepend 'ytsearch:' to ensure YouTube search
+                search_query = f"ytsearch:{song_name}"
+                info = ydl.extract_info(search_query, download=False)
                 
                 # Handle both playlist and single video results
-                if 'entries' in info:
+                if 'entries' in info and info['entries']:
                     video = info['entries'][0]
                 else:
-                    video = info
+                    await ctx.send("No YouTube results found for the song.")
+                    return
 
             song_title = video.get('title', song_name)
             video_url = video.get('webpage_url', '')
