@@ -180,40 +180,91 @@ async def download_song(url, ctx):
 # Search song with Invidious API
 def search_song(query):
     search_url = f"{INVIDIOUS_URL}/api/v1/search?q={query}"
+    print(f"[Invidious API] Searching for: {query}")
+    print(f"[Invidious API] Request URL: {search_url}")
+    
     try:
         response = requests.get(search_url, timeout=10)
+        print(f"[Invidious API] Response Status Code: {response.status_code}")
+        
         response.raise_for_status()
         data = response.json()
 
+        # Log the number of results
+        print(f"[Invidious API] Number of results: {len(data) if isinstance(data, list) else 0}")
+
         # Ensure it's a list and contains video entries
         if isinstance(data, list) and len(data) > 0:
+            # Log first result details
+            first_result = data[0]
+            print("[Invidious API] First Result:")
+            print(f"  Title: {first_result.get('title', 'N/A')}")
+            print(f"  Video ID: {first_result.get('videoId', 'N/A')}")
+            print(f"  Channel: {first_result.get('author', 'N/A')}")
+            
             return data
         else:
-            print(f"Unexpected API response: {data}")
+            print(f"[Invidious API] Unexpected API response: {data}")
             return []
     except requests.RequestException as e:
-        print(f"Error connecting to Invidious API: {e}")
+        print(f"[Invidious API] Error connecting to Invidious API: {e}")
         return []
     except ValueError as e:
-        print(f"Error parsing JSON from Invidious API: {e}")
+        print(f"[Invidious API] Error parsing JSON from Invidious API: {e}")
         return []
 
 # Add song to queue and play it
 async def add_to_queue_and_play(ctx, song_name: str):
     song_info = search_song(song_name)
     if not song_info:
-        await ctx.send("No results found! Please try a different query.")
-        return
-    video = song_info[0]  
-    if 'title' not in video or 'videoId' not in video:
-        await ctx.send("Invalid song data received from the search. Please try again.")
-        return
+        # If Invidious search fails, try direct YouTube search and download
+        try:
+            ydl_opts = {
+                'quiet': True,
+                'no_warnings': True,
+                'extract_flat': True,
+                'default_search': 'ytsearch1:',
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(song_name, download=False)
+                
+                # Handle both playlist and single video results
+                if 'entries' in info:
+                    video = info['entries'][0]
+                else:
+                    video = info
 
-    song_title = video['title']
-    video_url = f"https://www.youtube.com/watch?v={video['videoId']}"
+            song_title = video.get('title', song_name)
+            video_url = video.get('webpage_url', '')
+            video_id = video.get('id', '')
+
+            if not video_url:
+                await ctx.send("No results found! Please try a different query.")
+                return
+
+            # Send message about downloading
+            await ctx.send(f"No results in index. Downloading first result: {song_title}")
+
+            # Attempt to download the song
+            downloaded_file = await download_song(video_url, ctx)
+            if downloaded_file is None:
+                return  # Song was too long or download failed
+
+        except Exception as e:
+            await ctx.send(f"Error searching for song: {e}")
+            return
+    else:
+        video = song_info[0]  
+        if 'title' not in video or 'videoId' not in video:
+            await ctx.send("Invalid song data received from the search. Please try again.")
+            return
+
+        song_title = video['title']
+        video_url = f"https://www.youtube.com/watch?v={video['videoId']}"
+        video_id = video['videoId']
 
     # Check if song is already loaded
-    file_path = os.path.join(download_folder_path, f"{video['videoId']}.webm")
+    file_path = os.path.join(download_folder_path, f"{video_id}.webm")
     
     if not os.path.exists(file_path):
         await ctx.send(f"Downloading {song_title}...")
@@ -222,7 +273,7 @@ async def add_to_queue_and_play(ctx, song_name: str):
             return  # Song was too long, so we stop here
         await ctx.send(f"Downloaded {song_title}.")
 
-    song_queue.append({'title': song_title, 'url': video_url, 'id': video['videoId']})
+    song_queue.append({'title': song_title, 'url': video_url, 'id': video_id})
     await ctx.send(f"Added {song_title} to the queue.")
 
     # Start playing if not playing
@@ -396,5 +447,3 @@ async def on_ready():
     await bot.loop.run_in_executor(None, run_scan)
 
 bot.run(BOT_TOKEN)
-
-
