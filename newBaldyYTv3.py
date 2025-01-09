@@ -7,6 +7,8 @@ import yt_dlp
 import requests
 import random
 import asyncio
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 # Global variable to track bot readiness
 bot_ready = False
@@ -35,6 +37,7 @@ BOT_OWNER = int(config['BOT_OWNER'])
 MAX_SONG_TIME = int(config['MAX_SONG_TIME'])
 DOWNLOAD_FOLDER = config['DOWNLOAD_FOLDER']
 INVIDIOUS_URL = config['INVIDIOUS_URL']
+YOUTUBE_API_KEY = config['YOUTUBE_API_KEY']
 
 # Create download folder
 download_folder_path = os.path.join(script_dir, DOWNLOAD_FOLDER)
@@ -177,40 +180,48 @@ async def download_song(url, ctx):
         update_song_library(info_dict)
         return filename
 
-# Search song with Invidious API
+# Search Youtube API
 def search_song(query):
-    search_url = f"{INVIDIOUS_URL}/api/v1/search?q={query}"
-    print(f"[Invidious API] Searching for: {query}")
-    print(f"[Invidious API] Request URL: {search_url}")
-    
+    """Search for a song using YouTube Data API v3."""
     try:
-        response = requests.get(search_url, timeout=10)
-        print(f"[Invidious API] Response Status Code: {response.status_code}")
+        youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
         
-        response.raise_for_status()
-        data = response.json()
+        # Perform the search
+        search_response = youtube.search().list(
+            q=query,
+            part='snippet',
+            maxResults=1,
+            type='video'
+        ).execute()
 
-        # Log the number of results
-        print(f"[Invidious API] Number of results: {len(data) if isinstance(data, list) else 0}")
-
-        # Ensure it's a list and contains video entries
-        if isinstance(data, list) and len(data) > 0:
-            # Log first result details
-            first_result = data[0]
-            print("[Invidious API] First Result:")
-            print(f"  Title: {first_result.get('title', 'N/A')}")
-            print(f"  Video ID: {first_result.get('videoId', 'N/A')}")
-            print(f"  Channel: {first_result.get('author', 'N/A')}")
-            
-            return data
-        else:
-            print(f"[Invidious API] Unexpected API response: {data}")
+        # Check if we got any results
+        if not search_response.get('items'):
+            print(f"[YouTube API] No results found for query: {query}")
             return []
-    except requests.RequestException as e:
-        print(f"[Invidious API] Error connecting to Invidious API: {e}")
+
+        # Format the response to match the expected structure
+        results = []
+        for item in search_response['items']:
+            video_data = {
+                'title': item['snippet']['title'],
+                'videoId': item['id']['videoId'],
+                'author': item['snippet']['channelTitle']
+            }
+            results.append(video_data)
+            
+            # Log the result for debugging
+            print("[YouTube API] Search Result:")
+            print(f"  Title: {video_data['title']}")
+            print(f"  Video ID: {video_data['videoId']}")
+            print(f"  Channel: {video_data['author']}")
+
+        return results
+        
+    except HttpError as e:
+        print(f"[YouTube API] Error making API request: {e}")
         return []
-    except ValueError as e:
-        print(f"[Invidious API] Error parsing JSON from Invidious API: {e}")
+    except Exception as e:
+        print(f"[YouTube API] Unexpected error: {e}")
         return []
 
 # Add song to queue and play it
@@ -426,31 +437,40 @@ async def shutdown(ctx):
     await bot.close()
 
 # Queue song and play it
-@bot.command(name="play")
-@check_bot_ready()
-async def play(ctx, *, song_name: str):
-    await add_to_queue_and_play(ctx, song_name)
-
-# Pick 10 random songs, queue, shuffle and play them
 @bot.command(name="shuffle")
 @check_bot_ready()
 async def shuffle(ctx):
-    all_files = [f for f in os.listdir(download_folder_path) if f.endswith('.webm')]
-    random_files = random.sample(all_files, min(10, len(all_files)))
-    for filename in random_files:
-        song_id = filename.split('.')[0] 
-        video_url = f"https://www.youtube.com/watch?v={song_id}"
+    # Load the song library
+    try:
+        with open(library_path, 'r', encoding='utf-8') as f:
+            library = json.load(f)
+    except FileNotFoundError:
+        await ctx.send("No songs in library!")
+        return
+    except json.JSONDecodeError:
+        await ctx.send("Error reading song library!")
+        return
 
-        song_info = search_song(video_url)
+    if not library:
+        await ctx.send("The song library is empty!")
+        return
 
-        if isinstance(song_info, list) and len(song_info) > 0:
-            video = song_info[0]
-            song_title = video.get('title', 'Unknown Title')
-            song_queue.append({'title': song_title, 'url': video_url, 'id': song_id})
+    # Get 10 random songs from the library
+    selected_songs = random.sample(list(library.values()), min(10, len(library)))
+    
+    # Add them to the queue
+    for song in selected_songs:
+        song_queue.append({
+            'title': song['title'],
+            'url': song['url'],
+            'id': song['url'].split('=')[1]  # Extract video ID from URL
+        })
 
+    # Shuffle the queue
     random.shuffle(song_queue)
-    await ctx.send(f"Shuffled {len(random_files)} random songs and added them to the queue!")
+    await ctx.send(f"Shuffled {len(selected_songs)} random songs and added them to the queue!")
 
+    # Start playing if not already playing
     if not voice_client or not voice_client.is_playing():
         await play_song(ctx)
 
