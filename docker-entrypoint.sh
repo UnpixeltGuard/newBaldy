@@ -14,4 +14,4 @@ fi
 
 cd /app
 
-exec python newBaldy.py
+exec python newBaldyYTv3.py
