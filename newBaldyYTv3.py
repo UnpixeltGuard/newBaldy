@@ -36,7 +36,6 @@ BOT_TOKEN = config['BOT_TOKEN']
 BOT_OWNER = int(config['BOT_OWNER'])
 MAX_SONG_TIME = int(config['MAX_SONG_TIME'])
 DOWNLOAD_FOLDER = config['DOWNLOAD_FOLDER']
-INVIDIOUS_URL = config['INVIDIOUS_URL']
 YOUTUBE_API_KEY = config['YOUTUBE_API_KEY']
 
 # Create download folder
