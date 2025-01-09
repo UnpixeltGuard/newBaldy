@@ -2,7 +2,7 @@ FROM python:3.12.7-alpine
 
 WORKDIR /app
 
-ADD newBaldy.py ./newBaldy.py
+ADD newBaldyYTv3.py ./newBaldyYTv3.py
 ADD requirements.txt ./requirements.txt
 
 COPY docker-entrypoint.sh ./
