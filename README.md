@@ -6,10 +6,7 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/UnpixeltGuard/newBaldy?style=for-the-badge)
 
 Docker image for my own discord music bot for mostly personal use.
-Mashed together in Python. Uses Invidious API to bypass YouTube API restrictions. (please support their projects)
-
-YouTube seems to also crackdown on services like Invidious. Some instances have disabled certain functions or their APIs.
-Am currently looking for alternative ways to gather songs/songdata.
+Mashed together in Python. Needs a Youtube Data v3 API Key
 
 Mount your `config.txt` on the path `/app/config.txt`.
 
