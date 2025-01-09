@@ -6,7 +6,7 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/UnpixeltGuard/newBaldy?style=for-the-badge)
 
 Docker image for my own discord music bot for mostly personal use.
-Mashed together in Python. Needs a Youtube Data v3 API Key
+Mashed together in Python. Needs a Youtube Data v3 API Key.
 
 Mount your `config.txt` on the path `/app/config.txt`.
 
