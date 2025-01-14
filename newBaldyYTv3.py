@@ -366,6 +366,12 @@ async def skip(ctx):
     else:
         await ctx.send("No song is currently playing to skip.")
 
+# Queue song and play it
+@bot.command(name="play")
+@check_bot_ready()
+async def play(ctx, *, song_name: str):
+    await add_to_queue_and_play(ctx, song_name)
+
 # Stop music and disconnect bot
 @bot.command(name="stop")
 @check_bot_ready()
