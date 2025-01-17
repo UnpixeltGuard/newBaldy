@@ -4,7 +4,6 @@ import discord
 from discord.ext import commands, tasks
 from discord.ext.commands import is_owner
 import yt_dlp
-import requests
 import random
 import asyncio
 from googleapiclient.discovery import build
@@ -303,6 +302,32 @@ async def play_song(ctx):
             await ctx.send(f"Now playing: {song['title']}")
         except discord.ClientException as e:
             await ctx.send(f"Error playing audio: {e}")
+
+# Search for a song
+@bot.command(name="search")
+@check_bot_ready()
+async def search(ctx, *, query: str):
+    await ctx.send(f"🔍 Searching for: {query}")
+    
+    results = search_song(query)
+    
+    if not results:
+        await ctx.send("❌ No results found! Please try a different search term.")
+        return
+    
+    # Create an embedded message with search results
+    embed = discord.Embed(title="Search Results", color=discord.Color.blue())
+    
+    for i, result in enumerate(results, 1):
+        embed.add_field(
+            name=f"{i}. {result['title']}",
+            value=f"By: {result['author']}\nID: {result['videoId']}",
+            inline=False
+        )
+    
+    embed.set_footer(text="To play a song, use !play <song title> or !play https://youtube.com/watch?v=<video_id>")
+    
+    await ctx.send(embed=embed)
 
 # Show song queue
 @bot.command(name="queue")
