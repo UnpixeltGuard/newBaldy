@@ -29,6 +29,7 @@ pixelt/newBaldy:latest
 ```
 Command List
 ```
+!search     (song name)
 !play       (song name)
 !stop       (stop bot from playing)
 !queue      (displays current queue sans the active song)
@@ -38,4 +39,5 @@ Command List
 
 as owner
 !shutdown   (shuts down bot on backend)
+!remove     (with the id of the video that is to be removed from the library and downloadfolder)
 ```
