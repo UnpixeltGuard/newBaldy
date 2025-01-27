@@ -130,6 +130,13 @@ def check_bot_ready():
         return True
     return commands.check(predicate)
 
+def get_song_file_path(song_id):
+    for ext in ['.webm', '.m4a', '.mp3', '.opus']:
+        file_path = os.path.join(download_folder_path, f"{song_id}{ext}")
+        if os.path.exists(file_path):
+            return file_path
+    return None
+
 # Download song with yt-dlp
 async def download_song(url, ctx):
     ydl_opts = {
@@ -137,19 +144,35 @@ async def download_song(url, ctx):
         'outtmpl': os.path.join(download_folder_path, '%(id)s.%(ext)s'),
         'noplaylist': True,
         'quiet': True,
+        'no_warnings': True,
+        'extract_flat': False,
+        'force_generic_extractor': False,
+        'youtube_include_dash_manifest': False,
+        'ignoreerrors': True,
+        'verbose': False
     }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=False)
-        
-        duration = info_dict.get('duration', 0)
-        if duration > MAX_SONG_TIME:
-            await ctx.send(f"❌ Song duration ({duration} seconds) exceeds max allowed duration of {MAX_SONG_TIME} seconds!")
-            return None
+    
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=False)
+            
+            duration = info_dict.get('duration', 0)
+            if duration > MAX_SONG_TIME:
+                await ctx.send(f"❌ Song duration ({duration} seconds) exceeds max allowed duration of {MAX_SONG_TIME} seconds!")
+                return None
 
-        info_dict = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info_dict)
-        update_song_library(info_dict)
-        return filename
+            info_dict = ydl.extract_info(url, download=True)
+            video_id = info_dict['id']
+            actual_file = get_song_file_path(video_id)
+            if actual_file is None:
+                await ctx.send("❌ Error: Downloaded file not found!")
+                return None
+                
+            update_song_library(info_dict)
+            return actual_file
+    except Exception as e:
+        await ctx.send(f"❌ Download error: {str(e)}")
+        return None
 
 # Search Youtube API
 def search_song(query):
@@ -281,7 +304,13 @@ async def play_song(ctx):
         return
 
     song = song_queue.pop(0)
-    song_file = os.path.join(download_folder_path, f"{song['id']}.webm")
+    song_file = get_song_file_path(song['id'])
+    
+    if not song_file:
+        await ctx.send(f"❌ Error: Could not find audio file for {song['title']}")
+        await play_song(ctx)
+        return
+
     voice_channel = ctx.author.voice.channel
 
     if voice_channel:
@@ -292,16 +321,17 @@ async def play_song(ctx):
             if error:
                 print(f"Playback error: {error}")
             if voice_client and voice_client.is_playing():
-                voice_client.stop()  
-
+                voice_client.stop()
+            
             asyncio.run_coroutine_threadsafe(play_song(ctx), bot.loop)
 
         try:
             audio_source = discord.FFmpegPCMAudio(song_file)
             voice_client.play(audio_source, after=after_playback)
             await ctx.send(f"Now playing: {song['title']}")
-        except discord.ClientException as e:
-            await ctx.send(f"Error playing audio: {e}")
+        except Exception as e:
+            await ctx.send(f"❌ Error playing audio: {str(e)}")
+            await play_song(ctx)
 
 # Search for a song
 @bot.command(name="search")
