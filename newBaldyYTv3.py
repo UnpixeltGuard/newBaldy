@@ -176,7 +176,6 @@ async def download_song(url, ctx):
 
 # Search Youtube API
 def search_song(query):
-    """Search for a song using YouTube Data API v3."""
     try:
         youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
         
@@ -345,7 +344,6 @@ async def search(ctx, *, query: str):
         await ctx.send("❌ No results found! Please try a different search term.")
         return
     
-    # Create an embedded message with search results
     embed = discord.Embed(title="Search Results", color=discord.Color.blue())
     
     for i, result in enumerate(results, 1):
