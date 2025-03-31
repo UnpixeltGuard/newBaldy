@@ -30,5 +30,8 @@ RUN apk add --no-cache python3 py3-pip
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN groupadd -g 100 users || true
+RUN adduser --uid 99 --disabled-password --gecos "" nobody || true
+
 USER nobody
 ENTRYPOINT [ "./docker-entrypoint.sh" ]
