@@ -11,7 +11,6 @@ RUN chmod +x ./docker-entrypoint.sh
 
 VOLUME [ "/app" ]
 
-
 RUN apk update && apk add --no-cache \
     gcc \
     opus \
@@ -28,8 +27,8 @@ RUN apk update && apk add --no-cache \
     
 RUN apk add --no-cache python3 py3-pip
 
-
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
+USER nobody
 ENTRYPOINT [ "./docker-entrypoint.sh" ]
