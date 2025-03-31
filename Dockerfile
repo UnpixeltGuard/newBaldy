@@ -6,7 +6,6 @@ ADD newBaldyYTv3.py ./newBaldyYTv3.py
 ADD requirements.txt ./requirements.txt
 
 COPY docker-entrypoint.sh ./
-
 RUN chmod +x ./docker-entrypoint.sh
 
 VOLUME [ "/app" ]
@@ -31,7 +30,8 @@ RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 RUN groupadd -g 100 users || true
-RUN adduser --uid 99 --disabled-password --gecos "" nobody || true
+RUN userdel nobody || true && \
+    useradd --uid 99 --gid 100 --no-create-home --shell /usr/sbin/nologin nobody
 
 USER nobody
 ENTRYPOINT [ "./docker-entrypoint.sh" ]
