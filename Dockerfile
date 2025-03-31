@@ -29,9 +29,8 @@ RUN apk add --no-cache python3 py3-pip
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN groupadd -g 100 users || true
-RUN userdel nobody || true && \
-    useradd --uid 99 --gid 100 --no-create-home --shell /usr/sbin/nologin nobody
+RUN sed -i 's/^nobody:x:[^:]*:[^:]*:/nobody:x:99:100:/' /etc/passwd && \
+    sed -i 's/^nobody:x:[^:]*:/nobody:x:100:/' /etc/group
 
 USER nobody
 ENTRYPOINT [ "./docker-entrypoint.sh" ]
