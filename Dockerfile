@@ -29,8 +29,9 @@ RUN apk add --no-cache python3 py3-pip
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN sed -i 's/^nobody:x:[^:]*:[^:]*:/nobody:x:99:100:/' /etc/passwd && \
-    sed -i 's/^nobody:x:[^:]*:/nobody:x:100:/' /etc/group
+RUN chown 99:100 newBaldyYTv3.py
+RUN echo "nobody:x:99:100:nobody:/:/bin/false" > /etc/passwd && \
+    echo "users:x:100:" > /etc/group
 
 USER nobody
 ENTRYPOINT [ "./docker-entrypoint.sh" ]
