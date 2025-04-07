@@ -6,11 +6,9 @@ ADD newBaldyYTv3.py ./newBaldyYTv3.py
 ADD requirements.txt ./requirements.txt
 
 COPY docker-entrypoint.sh ./
-
 RUN chmod +x ./docker-entrypoint.sh
 
 VOLUME [ "/app" ]
-
 
 RUN apk update && apk add --no-cache \
     gcc \
@@ -28,8 +26,12 @@ RUN apk update && apk add --no-cache \
     
 RUN apk add --no-cache python3 py3-pip
 
-
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN chown 99:100 newBaldyYTv3.py
+RUN echo "nobody:x:99:100:nobody:/:/bin/false" > /etc/passwd && \
+    echo "users:x:100:" > /etc/group
+
+USER nobody
 ENTRYPOINT [ "./docker-entrypoint.sh" ]
