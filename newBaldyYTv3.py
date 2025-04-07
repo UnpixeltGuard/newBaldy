@@ -336,6 +336,7 @@ async def play_song(ctx):
 @bot.command(name="search")
 @check_bot_ready()
 async def search(ctx, *, query: str):
+    """Searches the Youtube API for a song!"""
     await ctx.send(f"🔍 Searching for: {query}")
     
     results = search_song(query)
@@ -361,6 +362,7 @@ async def search(ctx, *, query: str):
 @bot.command(name="queue")
 @check_bot_ready()
 async def show_queue(ctx):
+    """Shows the current queue!"""
     if not song_queue:
         await ctx.send("The queue is empty!")
     else:
@@ -371,6 +373,7 @@ async def show_queue(ctx):
 @bot.command(name="skip")
 @check_bot_ready()
 async def skip(ctx):
+    """Skips the current song!"""
     global voice_client
     if voice_client and voice_client.is_playing():
         voice_client.stop()
@@ -382,12 +385,14 @@ async def skip(ctx):
 @bot.command(name="play")
 @check_bot_ready()
 async def play(ctx, *, song_name: str):
+    """Searches the Youtube API and adds the first matching song to the playlist!"""
     await add_to_queue_and_play(ctx, song_name)
 
 # Stop music and disconnect bot
 @bot.command(name="stop")
 @check_bot_ready()
 async def stop(ctx):
+    """Stops the Bot and clears the current playlist!"""
     global voice_client
     if voice_client:
         voice_client.stop()
@@ -399,6 +404,7 @@ async def stop(ctx):
 @bot.command(name="library")
 @check_bot_ready()
 async def library(ctx, *, query: str = None):
+    """Lists/Searches library of the Bot!"""
     if not os.path.exists(library_path):
         await ctx.send("The song library is empty!")
         return
@@ -436,6 +442,7 @@ async def library(ctx, *, query: str = None):
 @bot.command(name="shuffle")
 @check_bot_ready()
 async def shuffle(ctx):
+    """Shuffles 10 random songs from library into the playlist!"""
     try:
         with open(library_path, 'r', encoding='utf-8') as f:
             library = json.load(f)
@@ -471,6 +478,7 @@ async def shuffle(ctx):
 @check_bot_ready()
 @is_owner()
 async def shutdown(ctx):
+    """Shuts down bot/container!"""
     await ctx.send("Shutting down the bot...")
     await bot.close()
 
@@ -479,6 +487,7 @@ async def shutdown(ctx):
 @check_bot_ready()
 @is_owner()
 async def remove_song(ctx, video_id: str):
+    """Removes song from library!"""
     try:
         with open(library_path, 'r', encoding='utf-8') as f:
             library = json.load(f)
@@ -511,6 +520,59 @@ async def remove_song(ctx, video_id: str):
     except Exception as e:
         await ctx.send(f"❌ An error occurred: {str(e)}")    
 
+
+class SupremeHelpCommand(commands.HelpCommand):
+    def get_command_signature(self, command):
+        return '%s%s %s' % (self.context.clean_prefix, command.qualified_name, command.signature)
+
+    async def send_bot_help(self, mapping):
+        embed = discord.Embed(title="Help", color=discord.Color.blurple())
+        for cog, commands in mapping.items():
+            filtered = await self.filter_commands(commands, sort=True)
+            if command_signatures := [
+                self.get_command_signature(c) for c in filtered
+            ]:
+                cog_name = getattr(cog, "qualified_name", " ")
+                embed.add_field(name=cog_name, value="\n".join(command_signatures), inline=False)
+
+        channel = self.get_destination()
+        await channel.send(embed=embed)
+
+    async def send_command_help(self, command):
+        embed = discord.Embed(title=self.get_command_signature(command) , color=discord.Color.blurple())
+        if command.help:
+            embed.description = command.help
+        if alias := command.aliases:
+            embed.add_field(name="Aliases", value=", ".join(alias), inline=False)
+
+        channel = self.get_destination()
+        await channel.send(embed=embed)
+
+    async def send_help_embed(self, title, description, commands): # a helper function to add commands to an embed
+        embed = discord.Embed(title=title, description=description or "No help found...")
+
+        if filtered_commands := await self.filter_commands(commands):
+            for command in filtered_commands:
+                embed.add_field(name=self.get_command_signature(command), value=command.help or "No help found...")
+
+        await self.get_destination().send(embed=embed)
+
+    async def send_group_help(self, group):
+        title = self.get_command_signature(group)
+        await self.send_help_embed(title, group.help, group.commands)
+
+    async def send_cog_help(self, cog):
+        title = cog.qualified_name or "No"
+        await self.send_help_embed(f'{title} Category', cog.description, cog.get_commands())
+    
+    async def send_error_message(self, error):
+        embed = discord.Embed(title="Error", description=error, color=discord.Color.red())
+        channel = self.get_destination()
+
+        await channel.send(embed=embed)
+
+
+bot.help_command = SupremeHelpCommand()
 
 # Start bot
 @bot.event
