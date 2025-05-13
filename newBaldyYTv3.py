@@ -8,6 +8,7 @@ import random
 import asyncio
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from configManager import ConfigManager, with_config
 
 bot_ready = False
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -15,22 +16,11 @@ config_file_path = os.path.join(script_dir, 'config.txt')
 INDEX_FOLDER = os.path.join(script_dir, 'index')
 os.makedirs(INDEX_FOLDER, exist_ok=True)
 library_path = os.path.join(INDEX_FOLDER, 'song_library.json')
-config = {}
-try:
-    with open(config_file_path, 'r') as f:
-        for line in f.readlines():
-            if '=' in line:
-                key, value = line.strip().split('=')
-                config[key.strip()] = value.strip()
-except FileNotFoundError:
-    print(f"Configuration file 'config.txt' not found at {config_file_path}. Please ensure it's in the same directory as the script.")
-    exit(1)
 
-BOT_TOKEN = config['BOT_TOKEN']
-BOT_OWNER = int(config['BOT_OWNER'])
-MAX_SONG_TIME = int(config['MAX_SONG_TIME'])
-DOWNLOAD_FOLDER = config['DOWNLOAD_FOLDER']
-YOUTUBE_API_KEY = config['YOUTUBE_API_KEY']
+config_manager = ConfigManager(config_file_path)
+
+MAX_SONG_TIME = config_manager.get_int('MAX_SONG_TIME')
+DOWNLOAD_FOLDER = config_manager.get('DOWNLOAD_FOLDER')
 
 download_folder_path = os.path.join(script_dir, DOWNLOAD_FOLDER)
 if not os.path.exists(download_folder_path):
@@ -39,6 +29,7 @@ if not os.path.exists(download_folder_path):
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
+bot.config_manager = config_manager
 
 song_queue = []
 voice_client = None
@@ -137,7 +128,6 @@ def get_song_file_path(song_id):
             return file_path
     return None
 
-# Download song with yt-dlp
 async def download_song(url, ctx):
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -174,10 +164,10 @@ async def download_song(url, ctx):
         await ctx.send(f"❌ Download error: {str(e)}")
         return None
 
-# Search Youtube API
+@with_config(['YOUTUBE_API_KEY'])
 def search_song(query):
     try:
-        youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+        youtube = build('youtube', 'v3', developerKey=config_manager.get('YOUTUBE_API_KEY'))
         
         search_response = youtube.search().list(
             q=query,
@@ -213,7 +203,6 @@ def search_song(query):
         print(f"[YouTube API] Unexpected error: {e}")
         return []
 
-# Add song to queue and play it
 async def add_to_queue_and_play(ctx, song_name: str):
     song_info = search_song(song_name)
     if not song_info:
@@ -293,7 +282,6 @@ async def add_to_queue_and_play(ctx, song_name: str):
     if not voice_client or not voice_client.is_playing():
         await play_song(ctx)
 
-# Play next song in queue
 async def play_song(ctx):
     global voice_client
     if not song_queue:
@@ -332,7 +320,6 @@ async def play_song(ctx):
             await ctx.send(f"❌ Error playing audio: {str(e)}")
             await play_song(ctx)
 
-# Search for a song
 @bot.command(name="search")
 @check_bot_ready()
 async def search(ctx, *, query: str):
@@ -358,7 +345,6 @@ async def search(ctx, *, query: str):
     
     await ctx.send(embed=embed)
 
-# Show song queue
 @bot.command(name="queue")
 @check_bot_ready()
 async def show_queue(ctx):
@@ -369,7 +355,6 @@ async def show_queue(ctx):
         queue_list = "\n".join([f"{idx + 1}. {song['title']}" for idx, song in enumerate(song_queue)])
         await ctx.send(f"Current Queue:\n{queue_list}")
 
-# Skip song
 @bot.command(name="skip")
 @check_bot_ready()
 async def skip(ctx):
@@ -381,14 +366,12 @@ async def skip(ctx):
     else:
         await ctx.send("No song is currently playing to skip.")
 
-# Queue song and play it
 @bot.command(name="play")
 @check_bot_ready()
 async def play(ctx, *, song_name: str):
     """Searches the Youtube API and adds the first matching song to the playlist!"""
     await add_to_queue_and_play(ctx, song_name)
 
-# Stop music and disconnect bot
 @bot.command(name="stop")
 @check_bot_ready()
 async def stop(ctx):
@@ -400,7 +383,6 @@ async def stop(ctx):
     song_queue.clear()
     await ctx.send("Stopped the music and cleared the queue!")
 
-# Library command
 @bot.command(name="library")
 @check_bot_ready()
 async def library(ctx, *, query: str = None):
@@ -438,7 +420,6 @@ async def library(ctx, *, query: str = None):
     ])
     await ctx.send(response)
 
-# Queue song and play it
 @bot.command(name="shuffle")
 @check_bot_ready()
 async def shuffle(ctx):
@@ -472,22 +453,27 @@ async def shuffle(ctx):
     if not voice_client or not voice_client.is_playing():
         await play_song(ctx)
 
-### Owner-only commands ###
-# Shutdown Bot
 @bot.command(name="shutdown")
 @check_bot_ready()
 @is_owner()
+@with_config(['BOT_OWNER'])
 async def shutdown(ctx):
     """Shuts down bot/container!"""
+    if ctx.author.id != int(config_manager.get('BOT_OWNER')):
+        await ctx.send("You don't have permission to use this command.")
+        return
     await ctx.send("Shutting down the bot...")
     await bot.close()
 
-# Remove Song from Library and Download Folder by video_id
 @bot.command(name="remove")
 @check_bot_ready()
 @is_owner()
+@with_config(['BOT_OWNER'])
 async def remove_song(ctx, video_id: str):
     """Removes song from library!"""
+    if ctx.author.id != int(config_manager.get('BOT_OWNER')):
+        await ctx.send("You don't have permission to use this command.")
+        return
     try:
         with open(library_path, 'r', encoding='utf-8') as f:
             library = json.load(f)
@@ -548,7 +534,7 @@ class SupremeHelpCommand(commands.HelpCommand):
         channel = self.get_destination()
         await channel.send(embed=embed)
 
-    async def send_help_embed(self, title, description, commands): # a helper function to add commands to an embed
+    async def send_help_embed(self, title, description, commands):
         embed = discord.Embed(title=title, description=description or "No help found...")
 
         if filtered_commands := await self.filter_commands(commands):
@@ -574,15 +560,20 @@ class SupremeHelpCommand(commands.HelpCommand):
 
 bot.help_command = SupremeHelpCommand()
 
-# Start bot
+
+@bot.event
 @bot.event
 async def on_ready():
     global bot_ready
-    print(f"Bot is logged in. Logged in as {bot.user.name}. Scanning library...")
-    
+    print(f"Bot is logged in. Logged in as {bot.user.name}. Scanning library...") 
     def run_scan():
         scan_and_update_library()
-    
     await bot.loop.run_in_executor(None, run_scan)
 
-bot.run(BOT_TOKEN)
+if __name__ == "__main__":
+    try:
+        bot_token = config_manager.get('BOT_TOKEN')
+        bot.run(bot_token)
+        config_manager.clear_sensitive('BOT_TOKEN')
+    except Exception as e:
+        print(f"Error starting bot: {e}")
