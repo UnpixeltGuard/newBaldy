@@ -37,15 +37,17 @@ class ConfigManager:
 def with_config(config_keys):
     def decorator(func):
         @functools.wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            for key in config_keys:
-                self.config_manager.get(key)
+        async def wrapper(*args, **kwargs):
+            from newBaldyYTv3 import config_manager
             
-            result = await func(self, *args, **kwargs)
+            for key in config_keys:
+                config_manager.get(key)
+            
+            result = await func(*args, **kwargs)
             
             for key in config_keys:
                 if key in ['BOT_TOKEN', 'YOUTUBE_API_KEY']:
-                    self.config_manager.clear_sensitive(key)
+                    config_manager.clear_sensitive(key)
             
             return result
         return wrapper

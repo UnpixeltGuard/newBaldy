@@ -202,7 +202,7 @@ async def search_song(query):
         return []
 
 async def add_to_queue_and_play(ctx, song_name: str):
-    song_info = search_song(song_name)
+    song_info = await search_song(song_name)
     if not song_info:
         try:
             print(f"[YouTube Search] Attempting to search for: {song_name}")
@@ -324,7 +324,7 @@ async def search(ctx, *, query: str):
     """Searches the Youtube API for a song!"""
     await ctx.send(f"🔍 Searching for: {query}")
     
-    results = search_song(query)
+    results = await search_song(query)
     
     if not results:
         await ctx.send("❌ No results found! Please try a different search term.")
@@ -559,7 +559,6 @@ class SupremeHelpCommand(commands.HelpCommand):
 bot.help_command = SupremeHelpCommand()
 
 
-@bot.event
 @bot.event
 async def on_ready():
     global bot_ready
