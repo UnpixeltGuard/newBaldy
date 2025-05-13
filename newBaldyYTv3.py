@@ -56,8 +56,6 @@ def update_song_library(song_info):
     with open(library_path, 'w', encoding='utf-8') as f:
         json.dump(library, f, indent=4, ensure_ascii=False)
 
-
-# Scan the downloads directory and update song_library.json with any songs not already in the index.
 def scan_and_update_library():
     global bot_ready
     try:
@@ -165,7 +163,7 @@ async def download_song(url, ctx):
         return None
 
 @with_config(['YOUTUBE_API_KEY'])
-def search_song(query):
+async def search_song(query):
     try:
         youtube = build('youtube', 'v3', developerKey=config_manager.get('YOUTUBE_API_KEY'))
         
