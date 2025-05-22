@@ -120,7 +120,7 @@ def check_bot_ready():
     return commands.check(predicate)
 
 def get_song_file_path(song_id):
-    for ext in ['.webm', '.m4a', '.mp3', '.opus']:
+    for ext in ['.webm', '.m4a', '.mp3', '.opus', '.mp4']:
         file_path = os.path.join(download_folder_path, f"{song_id}{ext}")
         if os.path.exists(file_path):
             return file_path
