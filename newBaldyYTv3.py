@@ -384,7 +384,7 @@ def check_bot_ready():
 @check_bot_ready()
 async def search(ctx, *, query: str):
     """Searches the Youtube API for a song!"""
-    await ctx.send(f"🔍 Searching for: {query}")
+    await ctx.send(f"Searching for: {query}")
     results = await search_song(query)
     if not results:
         await ctx.send("No results found! Please try a different search.")
@@ -456,7 +456,7 @@ async def library(ctx, *, query: str = None):
 
     if query is None:
         songs_list = list(library.values())[:20]
-        response = "📚 First 20 songs in the library:\n" + "\n".join([
+        response = "First 20 songs in the library:\n" + "\n".join([
             f"• {song['title']} (by {song['uploader']})" for song in songs_list
         ])
         await ctx.send(response)
@@ -470,7 +470,7 @@ async def library(ctx, *, query: str = None):
         await ctx.send(f"No songs found matching '{query}'.")
         return
 
-    response = f"🔍 Songs matching '{query}':\n" + "\n".join([
+    response = f"Songs matching '{query}':\n" + "\n".join([
         f"• {song['title']} (by {song['uploader']}) [ID: {song['url'].split('=')[1]}]" for song in matching_songs
     ])
     await ctx.send(response)
