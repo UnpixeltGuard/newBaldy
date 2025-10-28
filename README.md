@@ -2,7 +2,7 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/pixelt/newbaldy?style=for-the-badge)](https://hub.docker.com/r/pixelt/newbaldy)
 [![License](https://img.shields.io/github/license/UnpixeltGuard/newBaldy?style=for-the-badge)](https://github.com/UnpixeltGuard/newBaldy/blob/master/LICENSE)
 [![Version](https://img.shields.io/docker/v/pixelt/newbaldy/latest?style=for-the-badge)](https://hub.docker.com/r/pixelt/newbaldy/tags)
-[![Build](https://img.shields.io/github/workflow/status/UnpixeltGuard/newBaldy/Build%20latest%20docker%20image%20for%20JMusicBot?style=for-the-badge)](https://github.com/UnpixeltGuard/newBaldy/actions/workflows/main.yml)
+[![Build](https://img.shields.io/github/workflow/status/UnpixeltGuard/newBaldy/Build%and%20Push%20Docker%20Imaget?style=for-the-badge)](https://github.com/UnpixeltGuard/newBaldy/actions/workflows/docker.yml)
 ![GitHub last commit](https://img.shields.io/github/last-commit/UnpixeltGuard/newBaldy?style=for-the-badge)
 
 My own small discord music bot for personal use.
