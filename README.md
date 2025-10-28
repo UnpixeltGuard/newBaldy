@@ -2,8 +2,9 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/pixelt/newbaldy?style=for-the-badge)](https://hub.docker.com/r/pixelt/newbaldy)
 [![License](https://img.shields.io/github/license/UnpixeltGuard/newBaldy?style=for-the-badge)](https://github.com/UnpixeltGuard/newBaldy/blob/master/LICENSE)
 [![Version](https://img.shields.io/docker/v/pixelt/newbaldy/latest?style=for-the-badge)](https://hub.docker.com/r/pixelt/newbaldy/tags)
-[![Build](https://github.com/UnpixeltGuard/newBaldy/actions/workflows/docker.yml/badge.svg)
 ![GitHub last commit](https://img.shields.io/github/last-commit/UnpixeltGuard/newBaldy?style=for-the-badge)
+
+(https://github.com/UnpixeltGuard/newBaldy/actions/workflows/docker.yml/badge.svg)
 
 My own small discord music bot for personal use.
 Mashed together in Python. Needs a Youtube Data v3 API Key.
