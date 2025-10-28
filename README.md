@@ -4,7 +4,7 @@
 [![Version](https://img.shields.io/docker/v/pixelt/newbaldy/latest?style=for-the-badge)](https://hub.docker.com/r/pixelt/newbaldy/tags)
 ![GitHub last commit](https://img.shields.io/github/last-commit/UnpixeltGuard/newBaldy?style=for-the-badge)
 
-[Build](https://github.com/UnpixeltGuard/newBaldy/actions/workflows/docker.yml/badge.svg)
+[!Build](https://github.com/UnpixeltGuard/newBaldy/actions/workflows/docker.yml/badge.svg)
 
 My own small discord music bot for personal use.
 Mashed together in Python. Needs a Youtube Data v3 API Key.
