@@ -7,12 +7,12 @@
 [![Build](https://github.com/UnpixeltGuard/newBaldy/actions/workflows/docker.yml/badge.svg)](https://github.com/UnpixeltGuard/newBaldy/actions/workflows/docker.yml)
 
 My own small discord music bot for personal use.
-Mashed together in Python. Needs a Youtube Data v3 API Key.
+Mashed together in Python. Needs a Youtube Data v3 API Key. (usually ran into issues with api requests without)
 
-Mount your `config.txt` on the path `/app/config.txt`.
+Mount your `config.txt` on the path `/app/.env`.
 
 ```
-$ docker run --name baldbot -d -v /path/to/config.txt:/app/config.txt:ro \
+$ docker run --name baldbot -d -v /path/to/config.txt:/app/.env:ro \
 -v /path/to/downloadfolder:/app/downloads:rw \
 -v /path/to/index:/app/index:rw --restart=unless-stopped \
 pixelt/newBaldy:latest
@@ -23,7 +23,7 @@ this will download the current template from github.
 
 Without own config.txt
 ```
-$ docker run --name baldbot -d -v /path/to/config.txt:/app/config.txt:rw \
+$ docker run --name baldbot -d -v /path/to/config.txt:/app/.env:rw \
 -v /path/to/downloadfolder:/app/downloads:rw \
 -v /path/to/index:/app/index:rw --restart=unless-stopped \
 pixelt/newBaldy:latest
