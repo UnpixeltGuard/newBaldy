@@ -5,8 +5,8 @@ echo ""
 
 FILE=/app/.env
 if [ ! -f "$FILE" ]; then
-    echo "No .env file found, downloading example config from
-    https://github.com/UnpixeltGuard/newBaldy"
+    echo "No .env file found, downloading example config from https://github.com/UnpixeltGuard/newBaldy
+    If you have been using the bot previously, please update your config-file mount in Docker"
     
     curl -L https://raw.githubusercontent.com/UnpixeltGuard/newBaldy/refs/heads/main/.env -o /app/.env
     echo ""
