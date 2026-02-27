@@ -4,3 +4,4 @@ aiohttp
 PyNaCl
 yt-dlp
 google-api-python-client
+python-dotenv

@@ -6,28 +6,28 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 import discord
 from discord.ext import commands
-from discord.ext.commands import is_owner
+from discord.ext.commands import check
 import yt_dlp
 import random
 import asyncio
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from configManager import ConfigManager, with_config
+from configManager import ConfigManager
 
 # Setup and configuration
 logger = logging.getLogger("newBaldy")
 logging.basicConfig(level=logging.INFO)
 
 script_dir = Path(__file__).resolve().parent
-config_file_path = script_dir / "config.txt"
+config_file_path = script_dir / ".env"
 INDEX_FOLDER = script_dir / "index"
 INDEX_FOLDER.mkdir(parents=True, exist_ok=True)
 library_path = INDEX_FOLDER / "song_library.json"
 
 config_manager = ConfigManager(str(config_file_path))
 
-MAX_SONG_TIME = config_manager.get_int("MAX_SONG_TIME")
-DOWNLOAD_FOLDER = config_manager.get("DOWNLOAD_FOLDER") or "downloads"
+MAX_SONG_TIME = config_manager.max_song_time
+DOWNLOAD_FOLDER = config_manager.download_folder
 download_folder_path = script_dir / DOWNLOAD_FOLDER
 download_folder_path.mkdir(parents=True, exist_ok=True)
 
@@ -60,6 +60,14 @@ def set_voice_client_for_guild(guild_id: int, vc: Optional[discord.VoiceClient])
 
 def get_voice_client_for_guild(guild_id: int) -> Optional[discord.VoiceClient]:
     return guild_voice_clients.get(guild_id)
+
+# Owner check using BOT_OWNER from config
+def is_bot_owner():
+    async def predicate(ctx: commands.Context) -> bool:
+        if ctx.author.id != config_manager.bot_owner:
+            raise commands.NotOwner("You are not the bot owner.")
+        return True
+    return check(predicate)
 
 # Safe library access helpers
 def load_library() -> Dict[str, Any]:
@@ -151,7 +159,7 @@ def _scan_and_update_library_sync() -> None:
     except Exception:
         logger.exception("Error during library scan")
 
-# Downloads Sond via yt_dlp, Checks Duration-Limit and Updates Library
+# Downloads song via yt_dlp, checks duration limit and updates library
 async def download_song(url: str, ctx: commands.Context) -> Optional[str]:
     def _download_sync(download_url: str) -> Optional[Dict[str, Any]]:
         ydl_opts = {
@@ -210,11 +218,10 @@ async def download_song(url: str, ctx: commands.Context) -> Optional[str]:
     return actual_file
 
 # Use YouTube Data API for looking up videos
-@with_config(["YOUTUBE_API_KEY"])
 async def search_song(query: str) -> List[Dict[str, Any]]:
     def _search_sync(q: str) -> List[Dict[str, Any]]:
         try:
-            youtube = build("youtube", "v3", developerKey=config_manager.get("YOUTUBE_API_KEY"))
+            youtube = build("youtube", "v3", developerKey=config_manager.youtube_api_key)
             search_response = youtube.search().list(
                 q=q,
                 part="snippet",
@@ -294,7 +301,7 @@ async def play_next_for_guild(guild_id: int, text_channel_id: int) -> None:
     except Exception:
         logger.exception("Unexpected error in play_next_for_guild for guild %s", guild_id)
 
-# Search Library first, Download if missing, Add to queue
+# Search library first, download if missing, add to queue
 async def add_to_queue_and_play(ctx: commands.Context, song_name: str) -> None:
     guild_id = ctx.guild.id
     channel = ctx.channel
@@ -499,7 +506,6 @@ async def shuffle(ctx):
     await ctx.send(f"Shuffled {len(selected_songs)} random songs and added them to the queue!")
     vc = get_voice_client_for_guild(guild_id)
     if not vc or not vc.is_playing():
-        # Attempt to connect and play
         if ctx.author.voice and ctx.author.voice.channel:
             try:
                 vc = await ctx.author.voice.channel.connect()
@@ -513,11 +519,10 @@ async def shuffle(ctx):
 
 @bot.command(name="shutdown")
 @check_bot_ready()
-@is_owner()
+@is_bot_owner()
 async def shutdown(ctx):
     """Shuts down bot/container! (owner only)"""
     await ctx.send("Shutting down the bot...")
-    # Gracefully close voice clients
     for gid, vc in list(guild_voice_clients.items()):
         try:
             if vc and vc.is_connected():
@@ -528,7 +533,7 @@ async def shutdown(ctx):
 
 @bot.command(name="remove")
 @check_bot_ready()
-@is_owner()
+@is_bot_owner()
 async def remove_song(ctx, video_id: str):
     """Removes song from library! (owner only)"""
     try:
@@ -614,11 +619,4 @@ async def on_ready():
     logger.info("Library scan task scheduled/completed.")
 
 if __name__ == "__main__":
-    try:
-        bot_token = config_manager.get("BOT_TOKEN")
-        if not bot_token:
-            logger.error("BOT_TOKEN not found in config")
-            raise SystemExit("Missing BOT_TOKEN")
-        bot.run(bot_token)
-    except Exception:
-        logger.exception("Error starting bot")
+    bot.run(config_manager.bot_token)
