@@ -3,12 +3,12 @@
 echo "Starting PixMusicBot"
 echo ""
 
-FILE=/app/config.txt
+FILE=/app/.env
 if [ ! -f "$FILE" ]; then
-    echo "No config.txt found, downloading example config from
+    echo "No .env file found, downloading example config from
     https://github.com/UnpixeltGuard/newBaldy"
     
-    curl -L https://raw.githubusercontent.com/UnpixeltGuard/newBaldy/refs/heads/main/config.txt -o /app/config.txt
+    curl -L https://raw.githubusercontent.com/UnpixeltGuard/newBaldy/refs/heads/main/.env -o /app/.env
     echo ""
 fi
 
