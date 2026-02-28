@@ -9,7 +9,6 @@ import yt_dlp
 
 logger = logging.getLogger("newBaldy.library")
 
-
 def load_library(library_path: Path) -> Dict[str, Any]:
     if not library_path.exists():
         return {}
@@ -19,7 +18,6 @@ def load_library(library_path: Path) -> Dict[str, Any]:
     except (json.JSONDecodeError, FileNotFoundError) as e:
         logger.exception("Failed to read library file: %s", e)
         return {}
-
 
 def save_library(library: Dict[str, Any], library_path: Path) -> None:
     try:
@@ -31,7 +29,6 @@ def save_library(library: Dict[str, Any], library_path: Path) -> None:
         os.replace(tempname, str(library_path))
     except Exception:
         logger.exception("Failed to write library file")
-
 
 def update_song_library(
     song_info: Dict[str, Any],
@@ -53,7 +50,6 @@ def update_song_library(
         "download_date": song_info.get("download_date", ""),
     }
     save_library(library, library_path)
-
 
 def scan_and_update_library(
     download_folder_path: Path,
@@ -94,6 +90,15 @@ def scan_and_update_library(
                     "download_date": "",
                 }
                 new_songs_count += 1
+
+            except yt_dlp.utils.DownloadError:
+                logger.warning("Song %s is no longer available on YouTube, flagging to skip.", song_id)
+                library[song_id] = {
+                    "title": "Unavailable",
+                    "filename": str(Path(download_folder) / filename),
+                    "url": video_url,
+                    "unavailable": True,
+                }
 
             except Exception as e:
                 logger.exception("Error processing song %s: %s", song_id, e)
