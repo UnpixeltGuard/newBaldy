@@ -64,7 +64,7 @@ def scan_and_update_library(
     try:
         library = load_library(library_path)
         downloaded_files = [
-            f for f in os.listdir(download_folder_path) if f.endswith(".webm")
+            f for f in os.listdir(download_folder_path) if f.endswith(".mp4")
         ]
         new_songs_count = 0
 
@@ -79,7 +79,6 @@ def scan_and_update_library(
                     "quiet": True,
                     "no_warnings": True,
                     "no_color": True,
-                    "extract_flat": True,
                 }
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     video_info = ydl.extract_info(video_url, download=False)
