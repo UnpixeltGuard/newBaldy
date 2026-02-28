@@ -63,7 +63,7 @@ def scan_and_update_library(
     """Scan download folder and index any songs missing from the library."""
     try:
         library = load_library(library_path)
-        supported_extensions = {".mp4", ".webm", ".m4a", ".mp3", ".ogg", ".opus"}
+        supported_extensions = {".webm", ".m4a", ".mp3", ".opus", ".mp4"}
         downloaded_files = [
             f for f in os.listdir(download_folder_path)
             if Path(f).suffix.lower() in supported_extensions
