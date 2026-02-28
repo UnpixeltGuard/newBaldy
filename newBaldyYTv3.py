@@ -6,6 +6,9 @@ from discord.ext import commands
 from configManager import ConfigManager
 from utils.library import scan_and_update_library
 
+if not discord.opus.is_loaded():
+    discord.opus.load_opus("/usr/lib/libopus.so.0")
+
 # Logging
 logger = logging.getLogger("newBaldy")
 logging.basicConfig(level=logging.INFO)
