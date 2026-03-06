@@ -22,6 +22,7 @@ class AdminCog(commands.Cog, name="Admin"):
         self.library_path = library_path
 
     @commands.command(name="shutdown")
+    @is_bot_owner(config_manager)
     async def shutdown(self, ctx: commands.Context):
         """Shuts down the bot and disconnects from all voice channels. (owner only)"""
         await ctx.send("Shutting down...")
@@ -34,6 +35,7 @@ class AdminCog(commands.Cog, name="Admin"):
         await self.bot.close()
 
     @commands.command(name="remove")
+    @is_bot_owner(config_manager)
     async def remove_song(self, ctx: commands.Context, video_id: str):
         """Removes a song from the library and download folder by video ID. (owner only)"""
         try:
