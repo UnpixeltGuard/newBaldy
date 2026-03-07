@@ -9,7 +9,7 @@
 My own small discord music bot for personal use.
 Mashed together in Python. Needs a Youtube Data v3 API Key. (usually ran into issues with api requests without)
 
-Mount your `config.txt` on the path `/app/.env`.
+Mount your `config.txt` or `.env`-file on the container as `/app/.env`.
 
 ```
 $ docker run --name baldbot -d -v /path/to/config.txt:/app/.env:ro \
@@ -18,12 +18,12 @@ $ docker run --name baldbot -d -v /path/to/config.txt:/app/.env:ro \
 pixelt/newBaldy:latest
 ```
 
-If you don't already have a `config.txt` either download the template or mount the volume with `:rw`,
-this will download the current template from github.
+If you don't already have a `config.txt` or `.env` either download the template or mount the volume with `:rw`,
+this will download the current template from github. Restart the container after filling out the .env-file.
 
 Without own config.txt
 ```
-$ docker run --name baldbot -d -v /path/to/config.txt:/app/.env:rw \
+$ docker run --name baldbot -d -v /path/to/.env:/app/.env:rw \
 -v /path/to/downloadfolder:/app/downloads:rw \
 -v /path/to/index:/app/index:rw --restart=unless-stopped \
 pixelt/newBaldy:latest
