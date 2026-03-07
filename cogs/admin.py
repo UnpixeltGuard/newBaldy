@@ -4,7 +4,6 @@ import discord
 from discord.ext import commands
 from configManager import ConfigManager
 from utils import guild_state
-from utils.checks import is_bot_owner
 from utils.library import load_library, save_library
 from utils.downloader import get_song_file_path
 logger = logging.getLogger("newBaldy.admin")
@@ -24,11 +23,15 @@ class AdminCog(commands.Cog, name="Admin"):
         self.download_folder_path = download_folder_path
         self.library_path = library_path
 
+    async def cog_check(self, ctx: commands.Context) -> bool:
+        if ctx.author.id != self.config_manager.bot_owner:
+            raise commands.NotOwner("You are not the bot owner!")
+        return True
+    
     def _is_valid_video_id(video_id: str) -> bool:
         return bool(re.fullmatch(r'[A-Za-z0-9_\-]{6,16}', video_id))
     
     @commands.command(name="shutdown")
-    @is_bot_owner(config_manager)
     async def shutdown(self, ctx: commands.Context):
         """Shuts down the bot and disconnects from all voice channels. (owner only)"""
         await ctx.send("Shutting down...")
@@ -41,7 +44,6 @@ class AdminCog(commands.Cog, name="Admin"):
         await self.bot.close()
 
     @commands.command(name="remove")
-    @is_bot_owner(config_manager)
     async def remove_song(self, ctx: commands.Context, video_id: str):
         if not _is_valid_video_id(video_id):
             await ctx.send("Invalid video ID format.")
