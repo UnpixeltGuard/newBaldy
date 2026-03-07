@@ -71,6 +71,10 @@ class MusicCog(commands.Cog, name="Music"):
                 self.bot.loop.call_soon_threadsafe(
                     asyncio.create_task, self.play_next(g_id, ch_id)
                 )
+                try:
+                    future.result(timeout=10)
+                except Exception:
+                    logger.exception("Error scheduling play_next for guild %s", g_id)
 
             try:
                 vc.play(discord.FFmpegPCMAudio(song_file), after=_after)
