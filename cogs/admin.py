@@ -42,9 +42,9 @@ class AdminCog(commands.Cog, name="Admin"):
     @commands.command(name="remove")
     @is_bot_owner(config_manager)
     async def remove_song(self, ctx: commands.Context, video_id: str):
-    if not _is_valid_video_id(video_id):
-        await ctx.send("Invalid video ID format.")
-        return
+        if not _is_valid_video_id(video_id):
+            await ctx.send("Invalid video ID format.")
+            return
         """Removes a song from the library and download folder by video ID. (owner only)"""
         try:
             library = load_library(self.library_path)
