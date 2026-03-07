@@ -67,14 +67,17 @@ class MusicCog(commands.Cog, name="Music"):
 
             def _after(error, g_id=guild_id, ch_id=text_channel_id):
                 if error:
-                    logger.exception("Playback error for guild %s: %s", g_id, error)
-                self.bot.loop.call_soon_threadsafe(
-                    asyncio.create_task, self.play_next(g_id, ch_id)
-                )
+                    logger.error("Playback error for guild %s: %s", g_id, error)
                 try:
+                    future = asyncio.run_coroutine_threadsafe(
+                        self.play_next(g_id, ch_id), self.bot.loop
+                    )
                     future.result(timeout=10)
-                except Exception:
-                    logger.exception("Error scheduling play_next for guild %s", g_id)
+                except TimeoutError:
+                    logger.error("play_next timed out for guild %s", g_id)
+                    future.cancel()
+                except Exception as e:
+                    logger.error("Error scheduling play_next for guild %s: %s", g_id, e)
 
             try:
                 vc.play(discord.FFmpegPCMAudio(song_file), after=_after)
