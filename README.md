@@ -21,7 +21,7 @@ pixelt/newBaldy:latest
 If you don't already have a `config.txt` or `.env` either download the template or mount the volume with `:rw`,
 this will download the current template from github. Restart the container after filling out the .env-file.
 
-Without own config.txt
+Without own .env-file
 ```
 $ docker run --name baldbot -d -v /path/to/.env:/app/.env:rw \
 -v /path/to/downloadfolder:/app/downloads:rw \
