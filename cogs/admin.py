@@ -5,7 +5,9 @@ from discord.ext import commands
 from configManager import ConfigManager
 from utils import guild_state
 from utils.library import load_library, save_library
+from utils.downloader import get_song_file_path
 logger = logging.getLogger("newBaldy.admin")
+
 
 
 class AdminCog(commands.Cog, name="Admin"):
@@ -21,6 +23,9 @@ class AdminCog(commands.Cog, name="Admin"):
         self.download_folder_path = download_folder_path
         self.library_path = library_path
 
+    def _is_valid_video_id(video_id: str) -> bool:
+        return bool(re.fullmatch(r'[A-Za-z0-9_\-]{6,16}', video_id))
+    
     @commands.command(name="shutdown")
     @is_bot_owner(config_manager)
     async def shutdown(self, ctx: commands.Context):
@@ -37,6 +42,9 @@ class AdminCog(commands.Cog, name="Admin"):
     @commands.command(name="remove")
     @is_bot_owner(config_manager)
     async def remove_song(self, ctx: commands.Context, video_id: str):
+    if not _is_valid_video_id(video_id):
+        await ctx.send("Invalid video ID format.")
+        return
         """Removes a song from the library and download folder by video ID. (owner only)"""
         try:
             library = load_library(self.library_path)
@@ -48,9 +56,9 @@ class AdminCog(commands.Cog, name="Admin"):
             del library[video_id]
             save_library(library, self.library_path)
 
-            file_path = self.download_folder_path / f"{video_id}.webm"
-            if file_path.exists():
-                file_path.unlink()
+            file_path_str = get_song_file_path(video_id, self.download_folder_path)
+            if file_path_str:
+                Path(file_path_str).unlink()
                 await ctx.send(f"Removed **{song_title}** from the library and deleted the file.")
             else:
                 await ctx.send(
